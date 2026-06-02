@@ -1,5 +1,6 @@
 import { useForm } from "react-hook-form";
 import { supabase } from "../services/supabase";
+import { useNavigate } from "react-router-dom";
 
 type LoginFormData = {
   email: string;
@@ -7,24 +8,26 @@ type LoginFormData = {
 };
 
 const Login = () => {
+  const navigate = useNavigate();
   const {
     register,
     handleSubmit,
     formState: { errors },
   } = useForm<LoginFormData>();
 
-const onSubmit = async (data: LoginFormData) => {
-  const { error } = await supabase.auth.signInWithPassword({
-    email: data.email,
-    password: data.password,
-  });
+  const onSubmit = async (data: LoginFormData) => {
+    const { error } = await supabase.auth.signInWithPassword({
+      email: data.email,
+      password: data.password,
+    });
 
-  if (error) {
-    console.log(error.message);
-  } else {
-    console.log("Login successful");
-  }
-};
+    if (error) {
+      console.log(error.message);
+    } else {
+      console.log("Login successful");
+      navigate("/");
+    }
+  };
 
   return (
     <div className="h-screen flex items-center justify-center bg-gray-100">
