@@ -4,6 +4,7 @@ import Dashboard from "../pages/Dashboard";
 import { useEffect, useState } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "../services/supabase";
+import SignUp from "../pages/SignUp";
 
 export default function AppRoutes() {
   const [session, setSession] = useState<Session | null>(null);
@@ -21,7 +22,7 @@ export default function AppRoutes() {
 
     return () => subscription.unsubscribe();
   }, []);
-  
+
   return (
     <BrowserRouter>
       <Routes>
@@ -30,6 +31,10 @@ export default function AppRoutes() {
           element={session ? <Dashboard /> : <Navigate to="/login" />}
         />
         <Route path="/login" element=<Login /> />
+        <Route
+          path="/signUp"
+          element={!session ? <SignUp /> : <Navigate to="/dashboard" />}
+        />
       </Routes>
     </BrowserRouter>
   );

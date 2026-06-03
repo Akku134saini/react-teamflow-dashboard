@@ -1,6 +1,7 @@
 import { useForm } from "react-hook-form";
 import { supabase } from "../services/supabase";
 import { useNavigate } from "react-router-dom";
+import toast from "react-hot-toast";
 
 type LoginFormData = {
   email: string;
@@ -22,8 +23,10 @@ const Login = () => {
     });
 
     if (error) {
+      toast.error(error.message);
       console.log(error.message);
     } else {
+      toast.success("Login successful");
       console.log("Login successful");
       navigate("/");
     }
