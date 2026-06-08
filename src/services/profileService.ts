@@ -5,7 +5,7 @@ export const fetchProfile = async (userId: string) => {
     .from("profiles")
     .select("avatar_url")
     .eq("id", userId)
-    .single();
+    .maybeSingle();
 };
 
 export const saveProfileAvatar = async (

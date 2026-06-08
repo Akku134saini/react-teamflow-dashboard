@@ -17,10 +17,10 @@ export default function AvatarUpload({ userId, onUpload }: Props) {
 
     const fileExt = file.name.split(".").pop();
 
-    const fileName = `${userId}.${fileExt}`;
+    const fileName = `${userId}-${Date.now()}.${fileExt}`;
 
-    const filePath = `${fileName}`;
-
+    const filePath = `avatars/${fileName}`;
+    
     const { error } = await supabase.storage
       .from("avatars")
       .upload(filePath, file, {

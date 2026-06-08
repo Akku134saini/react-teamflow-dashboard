@@ -20,21 +20,23 @@ import {
 
 import { fetchProfile, saveProfileAvatar } from "../services/profileService";
 import Input from "../components/ui/input";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-interface Todo {
-  id: number;
-  text: string;
-  user_id: string | null;
-  created_at: string;
-}
+// interface Todo {
+//   id: number;
+//   text: string;
+//   user_id: string | null;
+//   created_at: string;
+// }
 
 interface TodoFormData {
   todo: string;
 }
 
 export default function Dashboard() {
+  const queryClient = useQueryClient();
   const { darkMode, toggleTheme } = useThemeStore();
-  const [todos, setTodos] = useState<Todo[]>([]);
+  // const [todos, setTodos] = useState<Todo[]>([]);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editText, setEditText] = useState("");
   const [avatarUrl, setAvatarUrl] = useState("");
@@ -46,16 +48,21 @@ export default function Dashboard() {
     formState: { isSubmitting },
   } = useForm<TodoFormData>();
 
-  const loadTodos = async () => {
-    const { data, error } = await fetchTodos();
+  // const loadTodos = async () => {
+  const { data: todos = [] } = useQuery({
+    queryKey: ["todos"],
 
-    if (error) {
-      toast.error(error.message);
-      return;
-    }
+    queryFn: async () => {
+      const { data, error } = await fetchTodos();
 
-    setTodos(data || []);
-  };
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      return data || [];
+    },
+  });
+  // };
 
   const loadProfile = async () => {
     const {
@@ -80,7 +87,7 @@ export default function Dashboard() {
 
   useEffect(() => {
     const initialize = async () => {
-      await loadTodos();
+      // await loadTodos();
       await loadProfile();
     };
 
@@ -96,7 +103,7 @@ export default function Dashboard() {
           table: "todos",
         },
         () => {
-          loadTodos();
+          // loadTodos();
         },
       )
       .subscribe();
@@ -106,24 +113,35 @@ export default function Dashboard() {
     };
   }, []);
 
-  const addTodo = async (formData: TodoFormData) => {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+  const addTodoMutation = useMutation({
+    mutationFn: async (formData: TodoFormData) => {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
 
-    if (!user) return;
+      if (!user) throw new Error("User not found");
 
-    const { error } = await createTodo(formData.todo, user.id);
+      const { error } = await createTodo(formData.todo, user.id);
 
-    if (error) {
+      if (error) {
+        throw new Error(error.message);
+      }
+    },
+
+    onSuccess: () => {
+      toast.success("Todo added");
+
+      reset();
+
+      queryClient.invalidateQueries({
+        queryKey: ["todos"],
+      });
+    },
+
+    onError: (error: Error) => {
       toast.error(error.message);
-      return;
-    }
-
-    toast.success("Todo added");
-
-    reset();
-  };
+    },
+  });
 
   const updateTodo = async (id: number) => {
     const { error } = await updateTodoById(id, editText);
@@ -140,16 +158,27 @@ export default function Dashboard() {
     setEditText("");
   };
 
-  const deleteTodo = async (id: number) => {
-    const { error } = await deleteTodoById(id);
+  const deleteTodoMutation = useMutation({
+    mutationFn: async (id: number) => {
+      const { error } = await deleteTodoById(id);
 
-    if (error) {
+      if (error) {
+        throw new Error(error.message);
+      }
+    },
+
+    onSuccess: () => {
+      toast.success("Todo deleted");
+
+      queryClient.invalidateQueries({
+        queryKey: ["todos"],
+      });
+    },
+
+    onError: (error: Error) => {
       toast.error(error.message);
-      return;
-    }
-
-    toast.success("Todo deleted");
-  };
+    },
+  });
 
   const saveAvatar = async (url: string) => {
     const {
@@ -244,7 +273,10 @@ export default function Dashboard() {
 
         {/* FORM */}
 
-        <form onSubmit={handleSubmit(addTodo)} className="flex gap-2 mb-6">
+        <form
+          onSubmit={handleSubmit((data) => addTodoMutation.mutate(data))}
+          className="flex gap-2 mb-6"
+        >
           <Input
             type="text"
             placeholder="Add todo..."
@@ -308,7 +340,7 @@ export default function Dashboard() {
                     </Button>
 
                     <Button
-                      onClick={() => deleteTodo(todo.id)}
+                      onClick={() => deleteTodoMutation.mutate(todo.id)}
                       className="bg-red-500"
                     >
                       Delete
